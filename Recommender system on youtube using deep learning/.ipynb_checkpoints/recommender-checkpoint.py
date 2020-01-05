@@ -55,8 +55,9 @@ def init_dictionary_data(dict_file):
 
             
 
-def init_data(read_file):
+def init_videodata(read_file):
     #0 is used for padding embedding
+    
     sku_cnt = 1
     label_cnt = 0
     
@@ -74,7 +75,7 @@ def init_data(read_file):
                     sku_cnt += 1;
 
                     
-def read_data(batch):
+def readData(batch):
     batch_size = len(batch)
     x = np.zeros((batch_size, max_win_size))
     mask = np.zeros((batch_size, max_win_size))
@@ -106,7 +107,7 @@ def read_data(batch):
 # Driver code
 def main():
     init_dictionary_data(init_file)
-    init_data(train)
+    init_videodata(train)
     
     n_input = len(s_dict) + 1
     n_classes = len(l_dict) 
@@ -129,24 +130,30 @@ def main():
         #'out': tf.Variable(tf.random_normal([n_classes]))
     }
     
-    # Create model
+    
+    
+    # Create Neural Network model
     def multilayer_perceptron(x, weights, biases):
         # Hidden layer with RELU activation
         #x = tf.nn.dropout(x, 0.5)
         layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
         layer_1 = tf.nn.relu(layer_1)
-        #dlayer_1 = tf.nn.dropout(layer_1, 0.4)
-        #layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
-        #layer_2 = tf.nn.relu(layer_2)
-        # Output layer with linear activation
-        # out_layer = tf.matmul(layer_1, weights['out']) + biases['out']
-        # return out_layer
-        return layer_1
+        dlayer_1 = tf.nn.dropout(layer_1, 0.4)
+        layer_2 = tf.add(tf.matmul(dlayer_1, weights['h2']), biases['b2'])
+        layer_2 = tf.nn.relu(layer_2)
+        #Output layer with linear activation
+        out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+        return out_layer
+        #return layer_1
+    
+    
     
     embedding = {
         'input':tf.Variable(tf.random_uniform([n_input, emb_size], -1.0, 1.0))
         # 'output':tf.Variable(tf.random_uniform([len(l_dict)+1, emb_size], -1.0, 1.0))
     }
+    
+    
     
     emb_mask = tf.placeholder(tf.float32, shape=[None, max_win_size, 1])
     word_num = tf.placeholder(tf.float32, shape=[None, 1])
@@ -199,7 +206,7 @@ def main():
             
             while 1:
                 
-                x, y, batch_mask, word_no = read_data(f_train.readlines(10000))
+                x, y, batch_mask, word_no = readData(f_train.readlines(10000))
                 
                 if y.shape[0] == 0:
                     break
@@ -226,12 +233,12 @@ def main():
         i = 0
         
         while 1:
-            line = f_test.readlines(1000)
+            l = f_test.readlines(1000)
             
-            if len(line) == 0:
+            if len(l) == 0:
                 break
                 
-            x, y, batch_mask, word_no = read_data(line)
+            x, y, batch_mask, word_no = readData(l)
             i += 1
             
             correct_pred = tf.equal(tf.argmax(out_layer, 1), tf.reshape(y_batch, [y.shape[0]]))
