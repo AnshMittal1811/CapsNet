@@ -21,8 +21,8 @@ max_win_size = 100
 emb_size = 50
 
 # Network Parameters
-n_hidden_1 = 50 # 1st layer number of features
-# n_hidden_2 = 256 # 2nd layer number of features
+n_hidden_1 = 512 # 1st layer number of features
+n_hidden_2 = 256 # 2nd layer number of features
 
 # Learning rate, epochs, steps
 lr = 0.001
@@ -30,14 +30,16 @@ epochs = 100
 dstep = 1
 
 
-def init_dictionary_data(dict_file):
+def init_dictionary_data(dict):
+    
     #s {sku} 0 is used for padding embedding
     #l {label} must be sorted by descending order
+    
     label_cnt = 0
     sku_cnt = 1
     
     # Opening the dictionary contains 
-    f = open(dict_file,'r')
+    f = open(dict,'r')
     
     for line in f:
         
@@ -55,20 +57,26 @@ def init_dictionary_data(dict_file):
 
             
 
-def init_videodata(read_file):
+def init_videodata(readfile):
+    
     #0 is used for padding embedding
     
     sku_cnt = 1
     label_cnt = 0
     
-    f = open(read_file,'r')
+    f = open(readfile,'r')
+    
     for line in f:
+        
         line = line.strip().split(' ')
+        
         for i in line:
+            
             if i.find('__label__') == 0:
                 if i not in l_dict:
                     l_dict[i] = label_cnt
                     label_cnt += 1;
+                    
             else:
                 if i not in s_dict:
                     s_dict[i] = sku_cnt
@@ -106,13 +114,14 @@ def readData(batch):
 
 # Driver code
 def main():
+    
     init_dictionary_data(init_file)
-    init_videodata(train)
+#     init_videodata(train)
     
     n_input = len(s_dict) + 1
     n_classes = len(l_dict) 
     
-#     #train_lst = linecache.getlines(train)
+    train_lst = linecache.getlines(train)
 #     print("Class Num: ", n_classes)
 #     print("Vocab Num: ", n_input)
     
@@ -121,15 +130,15 @@ def main():
     # Store layers weight & bias
     weights = {
         'h1': tf.Variable(tf.random_normal([emb_size, n_hidden_1]))
-        # 'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
-        #'out': tf.Variable(tf.random_normal([n_hidden_1, n_classes]))
-    }
-    biases = {
-        'b1': tf.Variable(tf.random_normal([n_hidden_1]))
-        # 'b2': tf.Variable(tf.random_normal([n_hidden_2])),
-        #'out': tf.Variable(tf.random_normal([n_classes]))
+        'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+        'out': tf.Variable(tf.random_normal([n_hidden_2, n_classes]))
     }
     
+    biases = {
+        'b1': tf.Variable(tf.random_normal([n_hidden_1]))
+        'b2': tf.Variable(tf.random_normal([n_hidden_2])),
+        'out': tf.Variable(tf.random_normal([n_classes]))
+    }
     
     
     # Create Neural Network model
@@ -141,9 +150,11 @@ def main():
         dlayer_1 = tf.nn.dropout(layer_1, 0.4)
         layer_2 = tf.add(tf.matmul(dlayer_1, weights['h2']), biases['b2'])
         layer_2 = tf.nn.relu(layer_2)
+        
         #Output layer with linear activation
         out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
         return out_layer
+    
         #return layer_1
     
     
